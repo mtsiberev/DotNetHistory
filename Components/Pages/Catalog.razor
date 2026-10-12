@@ -2,6 +2,7 @@
 @using DotNetHistory.Models
 @using DotNetHistory.Services
 @inject IFeatureService FeatureService
+@inject CodeSandboxService SandboxService
 @rendermode InteractiveServer
 
 <div class="container-fluid" style="height: calc(100vh - 80px); margin-top: 15px;">
@@ -89,6 +90,53 @@
                             <span class="text-muted fst-italic">// Для данной фичи доступен только статический просмотр кода</span>
                         }
                     </div>
+
+                    <div class="border-top pt-4 mt-5">
+                        <div class="d-flex align-items-center justify-content-between mt-4 mb-3">
+                            <h5 class="text-dark fw-semibold mb-0">Онлайн-песочница C#</h5>
+                            <button class="btn btn-success btn-sm d-flex align-items-center gap-2 shadow-sm" 
+                                    @onclick="HandleRunCustomCode" 
+                                    disabled="@isCompiling">
+                                @if (isCompiling)
+                                {
+                                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                    <span>Выполнение...</span>
+                                }
+                                else
+                                {
+                                    <svg xmlns="http://w3.org" width="14" height="14" fill="currentColor" class="bi bi-play-fill" viewBox="0 0 16 16">
+                                        <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
+                                    </svg>
+                                    <span>Запустить мой код</span>
+                                }
+                            </button>
+                        </div>
+
+                        <div class="mb-3 shadow-sm rounded">
+                            <textarea class="form-control bg-dark text-white p-3"
+                                      spellcheck="false"
+                                      style="font-family: 'Consolas', 'Monaco', monospace; font-size: 0.95rem; min-height: 180px; resize: vertical; line-height: 1.5; border-color: #2D3748;"
+                                      @bind="userCode"
+                                      placeholder="// Напишите свой C# код здесь..."></textarea>
+                        </div>
+
+                        <h5 class="text-dark mt-4 fw-semibold">Результат выполнения (Вывод консоли):</h5>
+                        <div class="p-3 rounded border shadow-sm mb-5" 
+                             style="background-color: #f8f9fa; font-family: 'Consolas', 'Monaco', monospace; font-size: 0.95rem; white-space: pre-wrap; text-align: left;">
+                            @if (!string.IsNullOrEmpty(sandboxErrorMessage))
+                            {
+                                <span class="text-danger fw-bold">@sandboxErrorMessage</span>
+                            }
+                            else if (!string.IsNullOrEmpty(sandboxOutput))
+                            {
+                                <span class="text-success fw-bold">@sandboxOutput</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted fst-italic">// Нажмите кнопку «Запустить мой код», чтобы увидеть результат выполнения...</span>
+                            }
+                        </div>
+                    </div>
                 }
             }
             else
@@ -107,18 +155,45 @@
     private List<DotNetVersion>? versions;
     private FeatureItem? selectedFeature;
 
+    private string userCode = string.Empty;
+    private string sandboxOutput = string.Empty;
+    private string sandboxErrorMessage = string.Empty;
+    private bool isCompiling = false;
+
     protected override async Task OnInitializedAsync()
     {
         versions = await FeatureService.GetCatalogAsync();
 
         if (versions != null && versions.Any())
         {
-            selectedFeature = versions.FirstOrDefault(v => v.Features != null && v.Features.Any())?.Features?.FirstOrDefault();
+            var firstFeature = versions.FirstOrDefault(v => v.Features != null && v.Features.Any())?.Features?.FirstOrDefault();
+            if (firstFeature != null)
+            {
+                selectedFeature = firstFeature;
+            }
         }
     }
 
     private void OnFeatureSelect(FeatureItem feature)
     {
         selectedFeature = feature;
+        
+        userCode = string.Empty;
+        sandboxOutput = string.Empty;
+        sandboxErrorMessage = string.Empty;
+    }
+
+    private async Task HandleRunCustomCode()
+    {
+        isCompiling = true;
+        sandboxOutput = string.Empty;
+        sandboxErrorMessage = string.Empty;
+
+        var result = await SandboxService.ExecuteCodeAsync(userCode);
+
+        sandboxOutput = result.Output;
+        sandboxErrorMessage = result.ErrorMessage;
+
+        isCompiling = false;
     }
 }

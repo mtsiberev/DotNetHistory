@@ -1,10 +1,14 @@
 using DotNetHistory.Components;
+using DotNetHistory.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+builder.Services.AddScoped<IFeatureService, MockFeatureService>();
+builder.Services.AddScoped<CodeSandboxService>();
 
 builder.Services.AddScoped<DotNetHistory.Services.IFeatureService, DotNetHistory.Services.MockFeatureService>();
 
