@@ -1,0 +1,389 @@
+[
+  {
+    "Name": ".NET Framework 4.7.1",
+    "Features": [
+      {
+        "Id": "fx471-std20",
+        "Name": "Полная поддержка .NET Standard 2.0",
+        "Description": "В базовую библиотеку классов (BCL) добавлено около 2000 недостающих API. Это стерло границы между классическим фреймворком и .NET Core, позволив использовать общие библиотеки без перекомпиляции.",
+        "CodeExample": "// Позволяет подключать общие библиотеки к проектам на Framework и Core",
+        "DocumentationUrl": "https://learn.microsoft.com/ru-ru/dotnet/standard/net-standard"
+      },
+      {
+        "Id": "fx471-conf",
+        "Name": "Configuration Builders (Конструкторы конфигурации)",
+        "Description": "Позволяет динамически переопределять секции web.config и app.config на лету, внедряя данные из внешних источников: переменных окружения, Azure Key Vault или пользовательских файлов.",
+        "CodeExample": "<configBuilders>\n  <builders>\n    <add name=\"EnvVars\" type=\"Microsoft.Configuration.ConfigurationBuilders.EnvironmentConfigBuilder\" />\n  </builders>\n</configBuilders>",
+        "DocumentationUrl": "https://learn.microsoft.com/ru-ru/aspnet/config-builder"
+      },
+      {
+        "Id": "fx471-gc",
+        "Name": "Оптимизация архитектуры кучи LOH/POH в GC",
+        "Description": "Сборщик мусора адаптирован под работу с большими массивами данных. Разделение областей памяти снизило количество глобальных блокировок потоков (GC pauses) в нагруженных серверных приложениях.",
+        "CodeExample": "// Изменения рантайма: уменьшает фризы приложений при частой работе с байтовыми массивами",
+        "DocumentationUrl": "https://learn.microsoft.com/ru-ru/dotnet/standard/garbage-collection/large-object-heap"
+      },
+      {
+        "Id": "fx471-tuple",
+        "Name": "Бинарная сериализация ValueTuple",
+        "Description": "Типы кортежей ValueTuple получили полноценную поддержку сериализации, что решило проблемы передачи легковесных структур данных через старые WCF-сервисы и бинарные потоки.",
+        "CodeExample": "[Serializable]\npublic (int Id, string Name) GetUserData() => (1, \"Alice\");",
+        "DocumentationUrl": "https://learn.microsoft.com/ru-ru/dotnet/csharp/language-reference/builtin-types/value-tuples"
+      }
+    ]
+  },
+  {
+    "Name": ".NET Framework 4.7.2",
+    "Features": [
+      {
+        "Id": "fx472-di",
+        "Name": "Внедрение зависимостей (DI) в Web Forms",
+        "Description": "Классический ASP.NET получил штатную поддержку DI через кастомные провайдеры. Теперь зависимости можно внедрять напрямую в конструкторы страниц (.aspx) и пользовательских элементов управления.",
+        "CodeExample": "public partial class Default : System.Web.UI.Page\n{\n    private readonly ILogger _logger;\n    public Default(ILogger logger) => _logger = logger;\n}",
+        "DocumentationUrl": "https://microsoft.com"
+      },
+      {
+        "Id": "fx472-samesite",
+        "Name": "Атрибут SameSite для HttpCookie",
+        "Description": "Внедрена встроенная поддержка флагов SameSite (Lax, Strict) для файлов куки в ASP.NET, что позволило защитить веб-приложения от уязвимостей межсайтовой подделки запросов (CSRF).",
+        "CodeExample": "HttpCookie cookie = new HttpCookie(\"session\") { SameSite = SameSiteMode.Lax, Secure = true };",
+        "DocumentationUrl": "https://microsoft.com"
+      },
+      {
+        "Id": "fx472-sql",
+        "Name": "Интерактивная MFA-аутентификация Azure AD",
+        "Description": "Компонент SqlClient расширен поддержкой режима Active Directory Interactive. Это позволило использовать многофакторную аутентификацию (MFA) при прямом подключении к базам данных Azure SQL.",
+        "CodeExample": "var conn = new SqlConnection(\"Server=tcp:sql.database.windows.net;Authentication=Active Directory Interactive;\");",
+        "DocumentationUrl": "https://microsoft.com"
+      }
+    ]
+  },
+  {
+    "Name": ".NET Framework 4.8",
+    "Features": [
+      {
+        "Id": "fx48-amsi",
+        "Name": "Интеграция со сканером вредоносного кода Windows AMSI",
+        "Description": "Среда CLR была интегрирована с Antimalware Scan Interface. Теперь код, который приложение динамически собирает или загружает прямо в оперативную память, прозрачно отправляется на проверку установленному в Windows антивирусу.",
+        "CodeExample": "byte[] rawAssembly = FetchFromNetwork();\nAssembly.Load(rawAssembly); // Проверяется Защитником Windows",
+        "DocumentationUrl": "https://microsoft.com"
+      },
+      {
+        "Id": "fx48-dpi",
+        "Name": "Поддержка WPF Per-Monitor DPI V2",
+        "Description": "Улучшен алгоритм масштабирования интерфейсов на компьютерах со смешанной плотностью пикселей (например, 4K монитор + Full HD экран ноутбука). Исправлено размытие шрифтов и элементов управления.",
+        "CodeExample": "<!-- Элементы WinForms в WPF теперь масштабируются автоматически без размытия -->",
+        "DocumentationUrl": "https://microsoft.com"
+      },
+      {
+        "Id": "fx48-wcf",
+        "Name": "WCF ServiceHealthBehavior",
+        "Description": "Добавлена специальная точка расширения для мониторинга WCF-сервисов. Публикует метрики здоровья (счетчики запросов, задержки, ошибки) по стандартному HTTP-адресу для интеграции с системами мониторинга.",
+        "CodeExample": "<serviceHealthEnabled=\"true\" httpGetUrl=\"health\" />",
+        "DocumentationUrl": "https://microsoft.com"
+      }
+    ]
+  },
+  {
+    "Name": ".NET Framework 4.8.1",
+    "Features": [
+      {
+        "Id": "fx481-arm64",
+        "Name": "Нативная поддержка архитектуры ARM64",
+        "Description": "Финальное функциональное обновление классического фреймворка добавило нативную поддержку процессоров ARM64. Приложения WinForms и WPF теперь запускаются на ноутбуках с чипами ARM без просадки производительности от эмуляции.",
+        "CodeExample": "// JIT-компилятор RyuJIT генерирует инструкции напрямую для процессоров ARM64",
+        "DocumentationUrl": "https://microsoft.com"
+      },
+      {
+        "Id": "fx481-wcag",
+        "Name": "Интеграция стандартов доступности WCAG 2.1",
+        "Description": "Глубокая переработка визуальной доступности WinForms и WPF: улучшена высококонтрастная отрисовка, добавлена поддержка паттернов автоматизации UIA Text Pattern для экранных дикторов.",
+        "CodeExample": "// Улучшает доступность элементов управления для экранных дикторов",
+        "DocumentationUrl": "https://microsoft.com"
+      }
+    ]
+  },
+  {
+    "Name": ".NET Core 1.0 / 1.1",
+    "Features": [
+      {
+        "Id": "core1-clr",
+        "Name": "Рождение кроссплатформенной среды CoreCLR",
+        "Description": "Фундаментальный разрыв с прошлым: абсолютно модульная, легковесная среда выполнения .NET, изначально спроектированная для работы на Windows, Linux и macOS.",
+        "CodeExample": "# Сборка и запуск идентичны на любой ОС:\ndotnet new console\ndotnet run",
+        "DocumentationUrl": "https://microsoft.com"
+      },
+      {
+        "Id": "core1-kestrel",
+        "Name": "Асинхронный веб-сервер Kestrel",
+        "Description": "Новый кроссплатформенный HTTP-сервер, оптимизированный под асинхронный ввод-вывод. По результатам тестов TechEmpower он оказался в десятки раз быстрее классического IIS.",
+        "CodeExample": "var server = new WebHostBuilder().UseKestrel().Build();",
+        "DocumentationUrl": "https://microsoft.com"
+      },
+      {
+        "Id": "core1-mid",
+        "Name": "Конвейер обработки запросов Middleware",
+        "Description": "Вместо тяжелых модулей HTTP Modules/Handlers введена концепция цепочки легковесных делегатов (Middleware), которые последовательно обрабатывают веб-запросы.",
+        "CodeExample": "app.Use(async (context, next) => {\n    await next();\n});",
+        "DocumentationUrl": "https://microsoft.com"
+      }
+    ]
+  },
+  {
+    "Name": ".NET Core 2.0 / 2.1",
+    "Features": [
+      {
+        "Id": "core2-span",
+        "Name": "Революция памяти: типы Span<T> и Memory<T>",
+        "Description": "Появление типов, позволяющих работать с любыми непрерывными областями памяти (управляемая куча, стек, нативная память) без выделения новых объектов и создания нагрузки на GC. Изменило производительность парсинга строк.",
+        "CodeExample": "ReadOnlySpan<char> source = \"2026-10-11\".AsSpan();\nReadOnlySpan<char> year = source.Slice(0, 4);",
+        "DocumentationUrl": "https://microsoft.com"
+      },
+      {
+        "Id": "core2-http",
+        "Name": "Внедрение HttpClientFactory",
+        "Description": "Решена историческая проблема утечки сокетов (Socket Exhaustion) при частом создании экземпляров HttpClient. Фабрика централизованно управляет жизненным циклом и пулом сетевых соединений.",
+        "CodeExample": "services.AddHttpClient<IMyService, MyService>();",
+        "DocumentationUrl": "https://microsoft.com"
+      },
+      {
+        "Id": "core2-chan",
+        "Name": "Высокопроизводительные System.Threading.Channels",
+        "Description": "Встроенная потокобезопасная коллекция для реализации паттернов «Издатель-Подписчик» (Producer-Consumer). Работает значительно быстрее и с меньшими аллокациями, чем старый BlockingCollection.",
+        "CodeExample": "var channel = Channel.CreateBounded(100);\nawait channel.Writer.WriteAsync(42);",
+        "DocumentationUrl": "microsoft.com"
+      }
+    ]
+  },
+  {
+    "Name": ".NET Core 3.0 / 3.1",
+    "Features": [
+      {
+        "Id": "core3-desktop",
+        "Name": "Перенос WinForms и WPF на .NET Core",
+        "Description": "Классическая разработка настольных оконных приложений получила второе дыхание. Запуск WinForms/WPF на базе .NET Core дал прирост производительности за счет нового JIT и BCL.",
+        "CodeExample": "netcoreapp3.1\ntrue",
+        "DocumentationUrl": "microsoft.com"
+      },
+      {
+        "Id": "core3-json",
+        "Name": "Новый встроенный парсер System.Text.Json",
+        "Description": "Высокопроизводительный, основанный на Span и UTF-8 байтах инструмент для сериализации JSON. Создан для замены популярного, но более медленного и аллокационного пакета Newtonsoft.Json.",
+        "CodeExample": "string json = JsonSerializer.Serialize(new { Status = \"Success\" });",
+        "DocumentationUrl": "microsoft.com"
+      },
+      {
+        "Id": "core3-blazor",
+        "Name": "Релиз технологии Blazor Server",
+        "Description": "Позволил создавать интерактивные SPA веб-интерфейсы полностью на языке C# без написания JavaScript-кода. Логика выполняется на сервере, а UI обменивается данными по WebSockets.",
+        "CodeExample": "<button @onclick=\"IncrementCount\">Клик\n@code { void IncrementCount() => currentCount++; }",
+        "DocumentationUrl": "microsoft.com"
+      },
+      {
+        "Id": "core3-nullable",
+        "Name": "Введение Nullable Reference Types (C# 8)",
+        "Description": "Глобальное изменение компилятора: теперь все ссылочные типы по умолчанию считаются не принимающими null. Для разрешения null нужно явно ставить знак вопроса.",
+        "CodeExample": "#nullable enable\nstring? nullableName = null;",
+        "DocumentationUrl": "microsoft.com"
+      }
+    ]
+  },
+  {
+    "Name": ".NET 5",
+    "Features": [
+      {
+        "Id": "net5-one",
+        "Name": "Унификация платформ и отказ от слова Core",
+        "Description": "Microsoft объединила ветки .NET Framework, .NET Core и Xamarin в одну общую платформу. Начиная с этого релиза, существует только один современный .NET.",
+        "CodeExample": "net5.0",
+        "DocumentationUrl": "microsoft.com"
+      },
+      {
+        "Id": "net5-records",
+        "Name": "Тип данных Records и синтаксис Init-only (C# 9)",
+        "Description": "Появление записей (records) — неизменяемых по умолчанию ссылочных типов с автоматической генерацией методов сравнения по значениям свойств и удобным синтаксисом копирования с мутацией.",
+        "CodeExample": "public record Person(string FirstName, string LastName);\nvar p2 = p1 with { FirstName = \"Alex\" };",
+        "DocumentationUrl": "microsoft.com"
+      },
+      {
+        "Id": "net5-source",
+        "Name": "Генераторы исходного кода (Source Generators)",
+        "Description": "Фича компилятора Roslyn, позволяющая анализировать код разработчика во время сборки и на лету дописывать новые C#-файлы. Это позволило отказаться от медленной рефлексии.",
+        "CodeExample": "// Код генерируется в процессе компиляции, ускоряя старт программы",
+        "DocumentationUrl": "microsoft.com"
+      },
+      {
+        "Id": "net5-top",
+        "Name": "Инструкции верхнего уровня (Top-Level Statements)",
+        "Description": "Избавление от шаблонного мусора (boilerplate): теперь стартовый файл приложения не требует обязательного написания namespace, class Program и метода Main.",
+        "CodeExample": "using System;\nConsole.WriteLine(\"Привет от Program.cs!\");",
+        "DocumentationUrl": "microsoft.com"
+      }
+    ]
+  },
+  {
+    "Name": ".NET 6 (LTS)",
+    "Features": [
+      {
+        "Id": "net6-minimal",
+        "Name": "Минимальные веб-интерфейсы (Minimal APIs)",
+        "Description": "Кардинальное упрощение создания микросервисов в ASP.NET Core. Маршруты и обработчики регистрируются напрямую в Program.cs без необходимости создавать классы контроллеров.",
+        "CodeExample": "var app = WebApplication.Create(args);\napp.MapGet(\"/api\", () => new { Status = \"OK\" });\napp.Run();",
+        "DocumentationUrl": "microsoft.com"
+      },
+      {
+        "Id": "net6-hot",
+        "Name": "Технология Hot Reload (Горячая перезагрузка)",
+        "Description": "Позволяет изменять C# код и разметку интерфейса прямо во время активной отладки приложения. Изменения мгновенно применяются в работающей программе без её перезапуска.",
+        "CodeExample": "// Изменения в коде применяются без перезапуска отладки",
+        "DocumentationUrl": "microsoft.com"
+      },
+      {
+        "Id": "net6-maui",
+        "Name": "Релиз мультиплатформенного интерфейса .NET MAUI",
+        "Description": "Пришел на смену Xamarin.Forms. Позволяет создавать нативные графические приложения для Android, iOS, macOS и Windows из одного общего проекта с единой кодовой базой.",
+        "CodeExample": "// Один проект компилируется в приложения под 4 разные ОС",
+        "DocumentationUrl": "microsoft.com"
+      },
+      {
+        "Id": "net6-pgo",
+        "Name": "Profile-Guided Optimization (PGO)",
+        "Description": "Интеллектуальная система JIT-компиляции. Среда выполнения собирает профиль использования методов и на лету перекомпилирует наиболее частые участки кода в производительный машинный код.",
+        "CodeExample": "// Дает автоматический прирост скорости выполнения алгоритмов",
+        "DocumentationUrl": "microsoft.com"
+      }
+    ]
+  },
+  {
+    "Name": ".NET 7",
+    "Features": [
+      {
+        "Id": "net7-genmath",
+        "Name": "Generic Math (Обобщенная математика в C# 11)",
+        "Description": "Благодаря появлению статических виртуальных членов в интерфейсах стало возможным писать обобщенные математические алгоритмы. Теперь один метод может складывать или перемножать любые числа.",
+        "CodeExample": "public T Sum(T a, T b) where T : INumber => a + b;",
+        "DocumentationUrl": "microsoft.com"
+      },
+      {
+        "Id": "net7-aot",
+        "Name": "Стабилизация технологии Native AOT компиляции",
+        "Description": "Компиляция C# напрямую в нативный машинный код под целевую ОС (без генерации IL-кода и без участия JIT). Результат — независимые бинарники с мгновенным стартом.",
+        "CodeExample": "dotnet publish -r win-x64 -c Release -p:PublishAot=true",
+        "DocumentationUrl": "microsoft.com"
+      },
+      {
+        "Id": "net7-container",
+        "Name": "Встроенная контейнеризация приложений через .NET CLI",
+        "Description": "Возможность упаковать веб-приложение в Docker-образ напрямую с помощью стандартных средств сборки .NET, вообще не создавая и не настраивая файл Dockerfile.",
+        "CodeExample": "dotnet publish /t:PublishContainer",
+        "DocumentationUrl": "microsoft.com"
+      },
+      {
+        "Id": "net7-regex",
+        "Name": "Регулярные выражения на Source Generators",
+        "Description": "Новый атрибут [GeneratedRegex]. Компилятор анализирует паттерн регулярного выражения при сборке приложения и генерирует под него эффективную логику распознавания строк.",
+        "CodeExample": "[GeneratedRegex(\"^\\\\d{3}$\")]\nprivate static partial Regex MyRegex();",
+        "DocumentationUrl": "microsoft.com"
+      }
+    ]
+  },
+  {
+    "Name": ".NET 8 (LTS)",
+    "Features": [
+      {
+        "Id": "net8-primary",
+        "Name": "Первичные конструкторы для классов и структур (C# 12)",
+        "Description": "Параметры конструктора теперь можно объявлять сразу в строке имени класса. Эти параметры автоматически становятся доступными во всем теле класса, убирая необходимость писать приватные поля.",
+        "CodeExample": "public class OrderService(IDbContext db, ILogger logger)\n{\n    public void Process() => logger.Log(db.DatabaseName);\n}",
+        "DocumentationUrl": "microsoft.com"
+      },
+      {
+        "Id": "net8-spread",
+        "Name": "Спред-оператор и выражения коллекций",
+        "Description": "Унифицированный и красивый синтаксис [..] для инициализации массивов, списков и спанов, а также для их быстрого слияния.",
+        "CodeExample": "int[] left = { 1, 2 };\nint[] right = { 3, 4 };\nint[] total = [..left, ..right];",
+        "DocumentationUrl": "microsoft.com"
+      },
+      {
+        "Id": "net8-frozen",
+        "Name": "Высокопроизводительные Frozen-коллекции",
+        "Description": "Добавлены типы FrozenDictionary и FrozenSet. Они созданы для сценариев конфигураций: их инициализация занимает чуть больше времени, но скорость чтения близка к теоретическому максимуму.",
+        "CodeExample": "var cache = myData.ToFrozenDictionary();",
+        "DocumentationUrl": "microsoft.com"
+      },
+      {
+        "Id": "net8-aspire",
+        "Name": "Оркестратор облачных приложений .NET Aspire",
+        "Description": "Новый мощный инструмент для создания распределенных облачных микросервисных систем. Автоматически настраивает связи между сервисами, базами данных и предоставляет красивый дашборд.",
+        "CodeExample": "// Упрощает оркестрацию и телеметрию сложных систем",
+        "DocumentationUrl": "microsoft.com"
+      },
+      {
+        "Id": "net8-blazor",
+        "Name": "Blazor Full-Stack Web UI",
+        "Description": "Полная переработка Blazor. Теперь в рамках одного приложения можно сочетать серверный рендеринг (SSR), потоковую передачу данных, интерактивный Blazor Server и Blazor WebAssembly.",
+        "CodeExample": "",
+        "DocumentationUrl": "microsoft.com"
+      }
+    ]
+  },
+  {
+    "Name": ".NET 9",
+    "Features": [
+      {
+        "Id": "net9-ai",
+        "Name": "Интеграция ИИ: Microsoft.Extensions.AI",
+        "Description": "Выпущена официальная библиотека унифицированных ИИ-абстракций. Введены интерфейсы IChatClient и IEmbeddingGenerator, позволяющие легко переключаться между любыми моделями одной строчкой кода.",
+        "CodeExample": "IChatClient client = new OllamaChatClient(new Uri(\"...\"), \"llama3\");\nvar result = await client.CompleteAsync(\"Hello AI\");",
+        "DocumentationUrl": "microsoft.com"
+      },
+      {
+        "Id": "net9-cache",
+        "Name": "Гибридное кэширование HybridCache",
+        "Description": "Новый компонент, который объединяет сверхбыстрый кэш в оперативной памяти (L1) и распределенный кэш (L2, например Redis), автоматически защищая от сбоев типа Cache Stampede.",
+        "CodeExample": "await _hybridCache.GetOrCreateAsync(\"key\", async token => await LoadFromDb());",
+        "DocumentationUrl": "microsoft.com"
+      },
+      {
+        "Id": "net9-avx",
+        "Name": "Глубокая векторизация кода через AVX-512",
+        "Description": "JIT-компилятор научился автоматически раскладывать сложные математические операции на векторные регистры современных процессоров AVX-512, ускоряя обработку массивов данных аппаратно.",
+        "CodeExample": "// Ускоряет расчеты векторов на аппаратном уровне",
+        "DocumentationUrl": "microsoft.com"
+      },
+      {
+        "Id": "net9-task",
+        "Name": "Эффективный метод Task.WhenEach",
+        "Description": "Добавлен метод для эффективного ожидания пачки асинхронных задач. Возвращает результаты по мере их готовности в виде асинхронного потока, предотвращая выделение лишней памяти.",
+        "CodeExample": "await foreach (var completedTask in Task.WhenEach(tasks))\n{\n    var result = await completedTask;\n}",
+        "DocumentationUrl": "microsoft.com"
+      }
+    ]
+  },
+  {
+    "Name": ".NET 10",
+    "Features": [
+      {
+        "Id": "net10-tensors",
+        "Name": "Встроенная поддержка Tensor на уровне BCL",
+        "Description": "Добавлен фундаментальный математический тип Tensor для эффективной работы с многомерными матрицами и выполнения срезов без копирования данных. Это делает C# нативной средой для локальных нейросетей.",
+        "CodeExample": "Tensor imageTensor = new Tensor();",
+        "DocumentationUrl": "microsoft.com"
+      },
+      {
+        "Id": "net10-mauiaot",
+        "Name": "Полный Native AOT для мобильных платформ (.NET MAUI)",
+        "Description": "Технология компиляции в обход JIT/IL полностью адаптирована для mobile-систем. Сборка мобильных приложений на .NET MAUI под Android и iOS в режиме Native AOT уменьшила размер бинарных файлов до 40%.",
+        "CodeExample": "// Приложения запускаются мгновенно без JIT-задержек",
+        "DocumentationUrl": "microsoft.com"
+      },
+      {
+        "Id": "net10-streams",
+        "Name": "Оптимизированный асинхронный стриминг данных",
+        "Description": "Глубокая перестройка пула потоков ThreadPool и каналов данных позволила передавать огромные объемы потоковых данных без выделения промежуточных буферов памяти.",
+        "CodeExample": "// Снижает затраты ОЗУ на облачных бэкендах при высоких нагрузках",
+        "DocumentationUrl": "microsoft.com"
+      }
+    ]
+  }
+]

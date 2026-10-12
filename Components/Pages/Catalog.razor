@@ -1,0 +1,124 @@
+﻿@page "/catalog"
+@using DotNetHistory.Models
+@using DotNetHistory.Services
+@inject IFeatureService FeatureService
+@rendermode InteractiveServer
+
+<div class="container-fluid" style="height: calc(100vh - 80px); margin-top: 15px;">
+    <div class="row h-100">
+
+        <div class="col-md-4 border-end bg-light p-3" style="overflow-y: auto; height: 100%;">
+            <h5 class="mb-3 text-muted">Хронология фич .NET</h5>
+            <hr />
+
+            @if (versions == null)
+            {
+                <p><em>Загрузка истории...</em></p>
+            }
+            else
+            {
+                @foreach (var version in versions)
+                {
+                    <div class="mb-4">
+                        <span class="badge bg-secondary mb-2 d-inline-block">@version.Name</span>
+
+                        @if (version.Features == null || !version.Features.Any())
+                        {
+                            <div class="text-muted ps-2 small fst-italic">Пока нет фич в базе данных</div>
+                        }
+                        else
+                        {
+                            <div class="list-group list-group-flush ps-2">
+                                @foreach (var feature in version.Features)
+                                {
+                                    <button type="button"
+                                            class="list-group-item list-group-item-action py-1 border-0 rounded @(selectedFeature?.Id == feature.Id ? "active" : "")"
+                                            @onclick="() => OnFeatureSelect(feature)">
+                                        • @feature.Name
+                                    </button>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            }
+        </div>
+
+        <div class="col-md-8 p-4" style="overflow-y: auto; height: 100%;">
+            @if (selectedFeature != null)
+            {
+                <h2 class="text-dark fw-bold">@selectedFeature.Name</h2>
+                <hr />
+
+                <div class="mb-3" style="white-space: pre-line; font-size: 1.1rem; color: #2D3748; line-height: 1.6;">
+                    @selectedFeature.Description
+                </div>
+
+                @if (!string.IsNullOrEmpty(selectedFeature.DocumentationUrl))
+                {
+                    <div class="mb-4">
+                        <a href="@selectedFeature.DocumentationUrl"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2">
+                            <svg xmlns="http://w3.org" width="14" height="14" fill="currentColor" class="bi bi-box-arrow-up-right" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 $.5-.5h6.636a.5.5 0 0 0 .5-.5" />
+                                <path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0z" />
+                            </svg>
+                            Документация Microsoft Learn
+                        </a>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(selectedFeature.CodeExample))
+                {
+                    <h5 class="text-dark mt-4 fw-semibold">Пример реализации:</h5>
+                    <pre class="bg-dark text-white p-3 rounded shadow-sm"
+                         style="white-space: pre-wrap; word-wrap: break-word; font-family: 'Consolas', 'Monaco', monospace; font-size: 0.95rem; text-align: left; max-height: 400px; overflow-y: auto;">
+                        <code>@selectedFeature.CodeExample</code>
+                    </pre>
+
+                    <h5 class="text-dark mt-4 fw-semibold">Результат выполнения (Вывод консоли):</h5>
+                    <div class="p-3 rounded border shadow-sm mb-5" style="background-color: #f8f9fa; font-family: 'Consolas', 'Monaco', monospace; font-size: 0.95rem; white-space: pre-wrap; text-align: left;">
+                        @if (FeatureRegistry.HasRunner(selectedFeature.Id))
+                        {            
+                            <span class="text-success fw-bold">@FeatureService.ExecuteFeatureCode(selectedFeature.Id)</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted fst-italic">// Для данной фичи доступен только статический просмотр кода</span>
+                        }
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="d-flex h-100 flex-column align-items-center justify-content-center text-muted">
+                    <span class="fs-1 mb-2">📋</span>
+                    <p class="fs-5">Выберите пункт в левой колонке для просмотра описания и примеров.</p>
+                </div>
+            }
+        </div>
+
+    </div>
+</div>
+
+@code {
+    private List<DotNetVersion>? versions;
+    private FeatureItem? selectedFeature;
+
+    protected override async Task OnInitializedAsync()
+    {
+        versions = await FeatureService.GetCatalogAsync();
+
+        if (versions != null && versions.Any())
+        {
+            selectedFeature = versions.FirstOrDefault(v => v.Features != null && v.Features.Any())?.Features?.FirstOrDefault();
+        }
+    }
+
+    private void OnFeatureSelect(FeatureItem feature)
+    {
+        selectedFeature = feature;
+    }
+}
