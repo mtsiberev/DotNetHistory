@@ -9,7 +9,7 @@
     <div class="row h-100">
 
         <div class="col-md-4 border-end bg-light p-3" style="overflow-y: auto; height: 100%;">
-            <h5 class="mb-3 text-muted">Хронология фич .NET</h5>
+            <h5 class="mb-3 text-muted">Хронологическая база знаний .NET</h5>
             <hr />
 
             @if (versions == null)
@@ -25,7 +25,7 @@
 
                         @if (version.Features == null || !version.Features.Any())
                         {
-                            <div class="text-muted ps-2 small fst-italic">Пока нет фич в базе данных</div>
+                            <div class="text-muted ps-2 small fst-italic">Нет зарегистрированных фич</div>
                         }
                         else
                         {
@@ -62,87 +62,81 @@
                            target="_blank"
                            rel="noopener noreferrer"
                            class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2">
-                            <svg xmlns="http://w3.org" width="14" height="14" fill="currentColor" class="bi bi-box-arrow-up-right" viewBox="0 0 16 16">
-                                <path fill-rule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 $.5-.5h6.636a.5.5 0 0 0 .5-.5" />
-                                <path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0z" />
-                            </svg>
                             Документация Microsoft Learn
                         </a>
                     </div>
                 }
 
-                @if (!string.IsNullOrEmpty(selectedFeature.CodeExample))
-                {
-                    <h5 class="text-dark mt-4 fw-semibold">Пример реализации:</h5>
-                    <pre class="bg-dark text-white p-3 rounded shadow-sm"
-                         style="white-space: pre-wrap; word-wrap: break-word; font-family: 'Consolas', 'Monaco', monospace; font-size: 0.95rem; text-align: left; max-height: 400px; overflow-y: auto;">
-                        <code>@selectedFeature.CodeExample</code>
-                    </pre>
-
-                    <h5 class="text-dark mt-4 fw-semibold">Результат выполнения (Вывод консоли):</h5>
-                    <div class="p-3 rounded border shadow-sm mb-5" style="background-color: #f8f9fa; font-family: 'Consolas', 'Monaco', monospace; font-size: 0.95rem; white-space: pre-wrap; text-align: left;">
-                        @if (FeatureRegistry.HasRunner(selectedFeature.Id))
-                        {            
-                            <span class="text-success fw-bold">@FeatureService.ExecuteFeatureCode(selectedFeature.Id)</span>
-                        }
-                        else
-                        {
-                            <span class="text-muted fst-italic">// Для данной фичи доступен только статический просмотр кода</span>
-                        }
-                    </div>
-
-                    <div class="border-top pt-4 mt-5">
-                        <div class="d-flex align-items-center justify-content-between mt-4 mb-3">
-                            <h5 class="text-dark fw-semibold mb-0">Онлайн-песочница C#</h5>
-                            <button class="btn btn-success btn-sm d-flex align-items-center gap-2 shadow-sm" 
-                                    @onclick="HandleRunCustomCode" 
-                                    disabled="@isCompiling">
-                                @if (isCompiling)
-                                {
-                                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                    <span>Выполнение...</span>
-                                }
-                                else
-                                {
-                                    <svg xmlns="http://w3.org" width="14" height="14" fill="currentColor" class="bi bi-play-fill" viewBox="0 0 16 16">
-                                        <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
-                                    </svg>
-                                    <span>Запустить мой код</span>
-                                }
+                <div class="border-top pt-3 mt-4">
+                    <ul class="nav nav-tabs mb-3" id="sandboxTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link @(activeTab == "feature" ? "active fw-bold text-primary" : "text-muted")"
+                                    type="button" @onclick='() => ChangeTab("feature")'>
+                                Код примера из файла
                             </button>
-                        </div>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link @(activeTab == "script" ? "active fw-bold text-success" : "text-muted")"
+                                    type="button" @onclick='() => ChangeTab("script")'>
+                                Песочница
+                            </button>
+                        </li>
+                    </ul>
 
-                        <div class="mb-3 shadow-sm rounded">
-                            <textarea class="form-control bg-dark text-white p-3"
-                                      spellcheck="false"
-                                      style="font-family: 'Consolas', 'Monaco', monospace; font-size: 0.95rem; min-height: 180px; resize: vertical; line-height: 1.5; border-color: #2D3748;"
-                                      @bind="userCode"
-                                      placeholder="// Напишите свой C# код здесь..."></textarea>
-                        </div>
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <span class="text-muted small">
+                            @(activeTab == "feature"
+                                ? "Вы можете модифицировать или полностью стереть код класса примера."
+                                : "Пишите любой рабочий C# код (Top-Level Statements) напрямую.")
+                        </span>
 
-                        <h5 class="text-dark mt-4 fw-semibold">Результат выполнения (Вывод консоли):</h5>
-                        <div class="p-3 rounded border shadow-sm mb-5" 
-                             style="background-color: #f8f9fa; font-family: 'Consolas', 'Monaco', monospace; font-size: 0.95rem; white-space: pre-wrap; text-align: left;">
-                            @if (!string.IsNullOrEmpty(sandboxErrorMessage))
+                        <button class="btn @(activeTab == "feature" ? "btn-primary" : "btn-success") btn-sm d-flex align-items-center gap-2 shadow-sm"
+                                @onclick="HandleRunCustomCode"
+                                disabled="@isCompiling">
+                            @if (isCompiling)
                             {
-                                <span class="text-danger fw-bold">@sandboxErrorMessage</span>
-                            }
-                            else if (!string.IsNullOrEmpty(sandboxOutput))
-                            {
-                                <span class="text-success fw-bold">@sandboxOutput</span>
+                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                <span>Выполнение...</span>
                             }
                             else
                             {
-                                <span class="text-muted fst-italic">// Нажмите кнопку «Запустить мой код», чтобы увидеть результат выполнения...</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-play-fill" viewBox="0 0 16 16">
+                                    <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z" />
+                                </svg>
+                                <span>Запустить мой код</span>
                             }
-                        </div>
+                        </button>
                     </div>
-                }
+
+                    <div class="mb-3 shadow-sm rounded">
+                        <textarea class="form-control bg-dark text-white p-3"
+                                  spellcheck="false"
+                                  style="font-family: 'Consolas', 'Monaco', monospace; font-size: 0.95rem; min-height: 380px; resize: vertical; line-height: 1.5; border-color: #2D3748;"
+                                  @bind="userCode"
+                                  placeholder="// Введите C# код для выполнения..."></textarea>
+                    </div>
+
+                    <h5 class="text-dark mt-4 fw-semibold">Результат выполнения (Вывод консоли):</h5>
+                    <div class="p-3 rounded border shadow-sm mb-5"
+                         style="background-color: #f8f9fa; font-family: 'Consolas', 'Monaco', monospace; font-size: 0.95rem; white-space: pre-wrap; text-align: left;">
+                        @if (!string.IsNullOrEmpty(sandboxErrorMessage))
+                        {
+                            <span class="text-danger fw-bold">@sandboxErrorMessage</span>
+                        }
+                        else if (!string.IsNullOrEmpty(sandboxOutput))
+                        {
+                            <span class="text-success fw-bold">@sandboxOutput</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted fst-italic">// Нажмите кнопку «Запустить мой код», чтобы увидеть результат выполнения...</span>
+                        }
+                    </div>
+                </div>
             }
             else
             {
                 <div class="d-flex h-100 flex-column align-items-center justify-content-center text-muted">
-                    <span class="fs-1 mb-2">📋</span>
                     <p class="fs-5">Выберите пункт в левой колонке для просмотра описания и примеров.</p>
                 </div>
             }
@@ -160,6 +154,8 @@
     private string sandboxErrorMessage = string.Empty;
     private bool isCompiling = false;
 
+    private string activeTab = "feature";
+
     protected override async Task OnInitializedAsync()
     {
         versions = await FeatureService.GetCatalogAsync();
@@ -169,18 +165,49 @@
             var firstFeature = versions.FirstOrDefault(v => v.Features != null && v.Features.Any())?.Features?.FirstOrDefault();
             if (firstFeature != null)
             {
-                selectedFeature = firstFeature;
+                UpdateSelectedFeature(firstFeature);
             }
         }
     }
 
     private void OnFeatureSelect(FeatureItem feature)
     {
+        if (selectedFeature?.Id == feature.Id) return;
+        UpdateSelectedFeature(feature);
+    }
+
+    private void UpdateSelectedFeature(FeatureItem feature)
+    {
         selectedFeature = feature;
-        
-        userCode = string.Empty;
+        activeTab = "feature";
+
+        userCode = feature.CodeExample ?? string.Empty;
+
         sandboxOutput = string.Empty;
         sandboxErrorMessage = string.Empty;
+    }
+
+    private void ChangeTab(string tabName)
+    {
+        if (activeTab == tabName) return;
+        activeTab = tabName;
+
+        sandboxOutput = string.Empty;
+        sandboxErrorMessage = string.Empty;
+
+        if (activeTab == "feature")
+        {
+            userCode = selectedFeature?.CodeExample ?? string.Empty;
+        }
+        else
+        {
+            userCode = """
+            using System;
+            using System.Collections.Generic;
+
+            Console.WriteLine("Чистая песочница готова. Здесь можно писать любой Top-Level скрипт.");
+            """;
+        }
     }
 
     private async Task HandleRunCustomCode()
@@ -189,7 +216,16 @@
         sandboxOutput = string.Empty;
         sandboxErrorMessage = string.Empty;
 
-        var result = await SandboxService.ExecuteCodeAsync(userCode);
+        SandboxResult result;
+
+        if (activeTab == "feature")
+        {
+            result = await SandboxService.ExecuteFeatureAsync(userCode);
+        }
+        else
+        {
+            result = await SandboxService.ExecuteScriptAsync(userCode);
+        }
 
         sandboxOutput = result.Output;
         sandboxErrorMessage = result.ErrorMessage;

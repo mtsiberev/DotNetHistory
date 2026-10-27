@@ -1,9 +1,4 @@
-﻿using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Runtime.Loader;
-using System.Text;
+﻿using System.Diagnostics;
 
 namespace DotNetHistory.Services;
 
@@ -16,111 +11,214 @@ public class SandboxResult
 
 public class CodeSandboxService
 {
-    private static readonly List<MetadataReference> References;
+    private readonly string _workingDir;
+    private readonly string _csprojPath;
+    private readonly string _programPath;
+    private readonly string _featureCodePath;
+    private readonly string _launcherPath;
+    private readonly string _dllPath;
+    private readonly object _lock = new();
 
-    static CodeSandboxService()
+    public CodeSandboxService()
     {
-        References = new List<MetadataReference>
-        {
-            MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-            MetadataReference.CreateFromFile(typeof(Console).Assembly.Location),
-            MetadataReference.CreateFromFile(Path.Combine(RuntimeEnvironment.GetRuntimeDirectory(), "System.Runtime.dll")),
-            MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location)
-        };
+        _workingDir = Path.Combine(Path.GetTempPath(), "DotNetOnlineSandbox_Shared");
+        _csprojPath = Path.Combine(_workingDir, "SandboxApp.csproj");
+        _programPath = Path.Combine(_workingDir, "Program.cs");
+        _featureCodePath = Path.Combine(_workingDir, "FeatureCode.cs");
+        _launcherPath = Path.Combine(_workingDir, "Launcher.cs");
+
+        int currentTargetVersion = Environment.Version.Major;
+        _dllPath = Path.Combine(_workingDir, "bin", "Release", $"net{currentTargetVersion}.0", "SandboxApp.dll");
+
+        InitializeSandboxProject(currentTargetVersion);
     }
 
-    public async Task<SandboxResult> ExecuteCodeAsync(string userCode, int timeoutMilliseconds = 3000)
+    private void InitializeSandboxProject(int targetVersion)
+    {
+        if (!Directory.Exists(_workingDir))
+        {
+            Directory.CreateDirectory(_workingDir);
+        }
+
+        string csprojContent = $"""
+        <Project Sdk="Microsoft.NET.Sdk">
+          <PropertyGroup>
+            <OutputType>Exe</OutputType>
+            <TargetFramework>net{targetVersion}.0</TargetFramework>
+            <ImplicitUsings>enable</ImplicitUsings>
+            <Nullable>enable</Nullable>
+            <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+            <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
+          </PropertyGroup>
+        </Project>
+        """;
+
+        File.WriteAllText(_csprojPath, csprojContent);
+        WipeSandboxCsFiles();
+
+        using var restoreProcess = new Process();
+        restoreProcess.StartInfo.FileName = "dotnet";
+        restoreProcess.StartInfo.Arguments = "restore";
+        restoreProcess.StartInfo.WorkingDirectory = _workingDir;
+        restoreProcess.StartInfo.UseShellExecute = false;
+        restoreProcess.StartInfo.CreateNoWindow = true;
+        restoreProcess.StartInfo.EnvironmentVariables["DOTNET_NOLOGO"] = "true";
+
+        restoreProcess.Start();
+        restoreProcess.WaitForExit();
+    }
+
+    private void WipeSandboxCsFiles()
+    {
+        if (!Directory.Exists(_workingDir)) return;
+
+        var csFiles = Directory.GetFiles(_workingDir, "*.cs");
+        foreach (var file in csFiles)
+        {
+            try
+            {
+                File.Delete(file);
+            }
+            catch { }
+        }
+    }
+
+    public async Task<SandboxResult> ExecuteFeatureAsync(string classCode, int timeoutMilliseconds = 5000)
+    {
+        lock (_lock)
+        {
+            WipeSandboxCsFiles();
+
+            File.WriteAllText(_featureCodePath, classCode);
+
+            string launcherContent = """
+            using System;
+            using System.Linq;
+            using System.Reflection;
+
+            public class SandboxMainLauncher
+            {
+                public static void Main(string[] args)
+                {
+                    try
+                    {
+                        var runnerType = Assembly.GetExecutingAssembly().GetTypes()
+                            .FirstOrDefault(t => t.IsClass && !t.IsAbstract && t.Name != "SandboxMainLauncher");
+
+                        if (runnerType != null)
+                        {
+                            dynamic runner = Activator.CreateInstance(runnerType);
+                            var result = runner.Execute();
+                            if (result is string str && !string.IsNullOrEmpty(str))
+                            {
+                                Console.WriteLine(str);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.Error.WriteLine("Ошибка выполнения: " + (ex.InnerException?.Message ?? ex.Message));
+                    }
+                }
+            }
+            """;
+            File.WriteAllText(_launcherPath, launcherContent);
+        }
+
+        return await BuildAndRunAsync(timeoutMilliseconds);
+    }
+
+    public async Task<SandboxResult> ExecuteScriptAsync(string scriptCode, int timeoutMilliseconds = 5000)
+    {
+        lock (_lock)
+        {
+            WipeSandboxCsFiles();
+
+            string fullScript = $"""
+            using System;
+            using System.Collections.Generic;
+            using System.Linq;
+            using System.Text;
+            using System.Threading.Tasks;
+            using System.IO;
+            using System.Buffers;
+            using System.Diagnostics;
+
+            {scriptCode}
+            """;
+
+            File.WriteAllText(_programPath, fullScript);
+        }
+
+        return await BuildAndRunAsync(timeoutMilliseconds);
+    }
+
+    private async Task<SandboxResult> BuildAndRunAsync(int timeoutMilliseconds)
     {
         var result = new SandboxResult();
 
-        if (string.IsNullOrWhiteSpace(userCode))
+        using (var buildProcess = new Process())
         {
-            result.ErrorMessage = "Код не может быть пустым.";
-            return result;
-        }
+            buildProcess.StartInfo.FileName = "dotnet";
+            buildProcess.StartInfo.Arguments = "build --no-restore -c Release -v m";
+            buildProcess.StartInfo.WorkingDirectory = _workingDir;
+            buildProcess.StartInfo.UseShellExecute = false;
+            buildProcess.StartInfo.RedirectStandardOutput = true;
+            buildProcess.StartInfo.RedirectStandardError = true;
+            buildProcess.StartInfo.CreateNoWindow = true;
+            buildProcess.StartInfo.EnvironmentVariables["DOTNET_NOLOGO"] = "true";
 
-        string fullSourceCode = """
-        using System;
-        using System.Collections.Generic;
-        using System.Linq;
-        using System.Text;
-        using System.Threading.Tasks;
+            buildProcess.Start();
+            string buildOutput = buildProcess.StandardOutput.ReadToEnd();
+            buildProcess.WaitForExit();
 
-        public class SandboxProgram
-        {
-            public static void Main()
+            if (buildProcess.ExitCode != 0)
             {
-        """ + $"\n{userCode}\n" + """
-            }
-        }
-        """;
-
-        try
-        {
-            var syntaxTree = CSharpSyntaxTree.ParseText(fullSourceCode);
-            var compilation = CSharpCompilation.Create(
-                $"SandboxAssembly_{Guid.NewGuid():N}",
-                new[] { syntaxTree },
-                References,
-                new CSharpCompilationOptions(OutputKind.ConsoleApplication));
-
-            using var ms = new MemoryStream();
-            var emitResult = compilation.Emit(ms);
-
-            if (!emitResult.Success)
-            {
-                var failures = emitResult.Diagnostics.Where(d => d.IsWarningAsError || d.Severity == DiagnosticSeverity.Error);
-                var errorBuilder = new StringBuilder("Ошибка компиляции:\n");
-                foreach (var diagnostic in failures)
-                {
-                    errorBuilder.AppendLine($"- {diagnostic.GetMessage()}");
-                }
-                result.ErrorMessage = errorBuilder.ToString();
+                result.ErrorMessage = $"Compilation error:\n{buildOutput}";
                 return result;
             }
+        }
 
-            ms.Seek(0, SeekOrigin.Begin);
+        using (var runProcess = new Process())
+        {
+            runProcess.StartInfo.FileName = "dotnet";
+            runProcess.StartInfo.Arguments = $"\"{_dllPath}\"";
+            runProcess.StartInfo.WorkingDirectory = _workingDir;
+            runProcess.StartInfo.UseShellExecute = false;
+            runProcess.StartInfo.RedirectStandardOutput = true;
+            runProcess.StartInfo.RedirectStandardError = true;
+            runProcess.StartInfo.CreateNoWindow = true;
+            runProcess.StartInfo.EnvironmentVariables["DOTNET_NOLOGO"] = "true";
 
-            using var cts = new CancellationTokenSource(timeoutMilliseconds);
-
-            await Task.Run(() =>
+            try
             {
-                var assembly = AssemblyLoadContext.Default.LoadFromStream(ms);
-                var type = assembly.GetType("SandboxProgram");
-                var method = type?.GetMethod("Main");
-
-                if (method == null)
-                {
-                    result.ErrorMessage = "Не удалось найти точку входа в программу.";
-                    return;
-                }
-
-                var currentOut = Console.Out;
-                using var writer = new StringWriter();
-                Console.SetOut(writer);
-
+                runProcess.Start();
+                using var cts = new CancellationTokenSource(timeoutMilliseconds);
                 try
                 {
-                    method.Invoke(null, null);
-                    result.Output = writer.ToString();
+                    await runProcess.WaitForExitAsync(cts.Token);
+                    string output = await runProcess.StandardOutput.ReadToEndAsync();
+                    string errors = await runProcess.StandardError.ReadToEndAsync();
+
+                    if (runProcess.ExitCode != 0 || !string.IsNullOrEmpty(errors))
+                    {
+                        result.ErrorMessage = string.IsNullOrWhiteSpace(errors) ? output : errors;
+                    }
+                    else
+                    {
+                        result.Output = output;
+                    }
                 }
-                catch (TargetInvocationException ex)
+                catch (OperationCanceledException)
                 {
-                    result.ErrorMessage = $"Ошибка в рантайме: {ex.InnerException?.Message}";
+                    runProcess.Kill(entireProcessTree: true);
+                    result.ErrorMessage = $"Execution timeout expired ({timeoutMilliseconds} ms).";
                 }
-                finally
-                {
-                    Console.SetOut(currentOut);
-                }
-            }, cts.Token);
-        }
-        catch (OperationCanceledException)
-        {
-            result.ErrorMessage = $"Превышено время ожидания выполнения ({timeoutMilliseconds} мс). Возможно, в коде бесконечный цикл.";
-        }
-        catch (Exception ex)
-        {
-            result.ErrorMessage = $"Системный сбой песочницы: {ex.Message}";
+            }
+            catch (Exception ex)
+            {
+                result.ErrorMessage = $"Sandbox system crash: {ex.Message}";
+            }
         }
 
         return result;

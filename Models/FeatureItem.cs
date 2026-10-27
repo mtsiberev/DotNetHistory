@@ -7,5 +7,8 @@
         public string Description { get; set; } = string.Empty;
         public string CodeExample { get; set; } = string.Empty;
         public string DocumentationUrl { get; set; } = string.Empty;
+
+        public string Usings { get; set; } = string.Empty;
     }
+
 }
